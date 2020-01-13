@@ -1,3 +1,15 @@
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+
+def plot_bar(z,title = "Oslo Model"):
+    heights = np.cumsum(z[::-1])[::-1] #indexing to reverse list
+    plt.figure(figsize= (8,5))
+    plt.bar(np.arange(1,len(z)+1,1),heights)
+    plt.title(title)
+    plt.ylabel("Heights")
+    plt.xlabel("sites")
+
 def Oslo(L, plot=False, p=1 / 2, N_recurrents=1000, title=None):
     """
     Parameters
@@ -30,8 +42,9 @@ def Oslo(L, plot=False, p=1 / 2, N_recurrents=1000, title=None):
         # Drive
         z[0] += 1
 
+        abc = [x > y for x, y in zip(z, z_th)]
         # Relaxation - Checks all slopes z relaxed, before driving again
-        while any(x > y for x, y in zip(z, z_th)) == True:  # z[i] > z_th[i]:
+        while any(abc) == True:  # z[i] > z_th[i]:
             s = 0
             for i in range(len(z)):
                 if z[i] > z_th[i]:
@@ -50,7 +63,7 @@ def Oslo(L, plot=False, p=1 / 2, N_recurrents=1000, title=None):
                         z[i - 1] = z[i - 1] + 1
 
                     # Only resets if topples
-                    z_th[i] = np.random.choice(z_ths, p=prob)
+                    z_th[i] = random.choice(z_ths)
 
                 # If avalance size is whole length of sites
                 if s == L:
@@ -61,9 +74,9 @@ def Oslo(L, plot=False, p=1 / 2, N_recurrents=1000, title=None):
                     end_value += 1
                     z_avg_steady.append(np.cumsum(z[::-1])[::-1][0])
                 avalanches.append(s)
-
+            abc = [x > y for x, y in zip(z, z_th)]
         configurations.append(z[:])
-        # Check 
+        # Check
         if any(x > max(z_ths) for x in z) == True:
             raise ValueError("Not all sites relaxed")
 
@@ -77,4 +90,4 @@ def Oslo(L, plot=False, p=1 / 2, N_recurrents=1000, title=None):
     return heights, z, np.mean(z_avg_steady), configurations
 
 
-Oslo(512, p=1 / 2, plot=True, N_recurrents=10)
+Oslo(100, p=1 / 2, plot=True, N_recurrents=10)
