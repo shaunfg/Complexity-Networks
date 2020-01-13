@@ -90,4 +90,4 @@ def Oslo(L, plot=False, p=1 / 2, N_recurrents=1000, title=None):
     return heights, z, np.mean(z_avg_steady), configurations
 
 
-Oslo(100, p=1 / 2, plot=True, N_recurrents=10)
+Oslo(40, p=1 / 2, plot=True, N_recurrents=10)
