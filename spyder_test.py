@@ -100,12 +100,12 @@ def Oslo(L, plot=False, p=1 / 2, N_recurrents=10, title=None):
                             next_slopes.append(i-1)
 
                     print("inbetween--{}".format(i),z,z_th,next_slopes)    
-                    
+                    z_th[i] = random.choice(z_ths)
+
                     if z[i] > z_th[i]:
-                        pass
-                    else:
+                        next_slopes.append(i)
+#                    else:
                     # Only resets if topples
-                        z_th[i] = random.choice(z_ths)
             
 #                     if z[len(z) - 1] == z_th[len(z) - 1] + 1:
 #                         next_slopes.append(len(z) - 1)
