@@ -27,17 +27,16 @@ class Oslo:
     N_recurrents: Number of recurrent runs after reaching steady state
     """
     
-    def __init__(self,L):
+    def __init__(self,L, p =[1/2,1/2]):
+        self.p = p
         self.L = L
 
-
-
-    def run(self, plot=False, p =[1/2,1/2], N_recurrents=10,title=None, check_slopes = False):
+    def run(self, plot=False, N_recurrents=None,title=None, check_slopes = False,N_runs = None):
 
         z = [0] * self.L
 
         # Allows for change in probabilities
-        n = len(p)  # Number of thresholds, from probability
+        n = len(self.p)  # Number of thresholds, from probability
         z_ths = np.arange(1, n + 1, 1)  # Generates possible thresholds [1,2,...]
 
         # Initialisation
@@ -47,18 +46,28 @@ class Oslo:
         end_value = 0
         avalanches = []
         z_avg_steady = []
-        steady = False  # To
+        crossover = False  # To
         N_full_avalanche = 0  # Tracks full avalanches
         configurations = []  # Find number of unique configurations
-        delta_heights = [0]
+        self.delta_heights = [0]
+        self.cross_over_time = 0
+        cross_over_time = 0
 
-        while end_value < N_recurrents:
+        if N_runs != None:
+            N_count = N_runs
+        elif N_recurrents != None:
+            N_count = N_recurrents
+        
+        while end_value < N_count:
 
             # Drive
             z[0] += 1
-            s= 0
+            s = 0
             del_h = 1
             slopes_to_relax = [0]
+            
+            if end_value % 1000 == 0:
+                print(end_value)
 
             # Relaxation - Checks all slopes z relaxed, before driving again
             while len(slopes_to_relax) != 0:
@@ -70,25 +79,23 @@ class Oslo:
                         if i == 0:
                             z[i] = z[i] - 2
                             z[i+1] = z[i+1] + 1
-
                             if z[i+1] == z_th[i+1] + 1:
                                 next_slopes.append(i+1)
+                            if crossover == False: cross_over_time += 1
+                            del_h -= 1
 
                         elif i == len(z) - 1:  # index 0,...,L-1 ; len to L
+                
                             z[len(z) - 1] = z[len(z) - 1] - 1
                             z[len(z) - 2] = z[len(z) - 2] + 1
-
-                            steady = True
-                            del_h = 0
-
+                            crossover = True
                             if z[len(z) - 2] == z_th[len(z) - 2] + 1:
                                 next_slopes.append(len(z) - 2)
+#                             if steady == True: outflux += 1
+                            
+                            if self.cross_over_time == 0: self.cross_over_time = cross_over_time
 
-    #                         if steady == True: outflux += 1
                         else:
-                            if z[i+1] == z_th[i+1] + 1:
-                                next_slopes.append(i+1)
-
                             z[i] = z[i] - 2
                             z[i + 1] = z[i + 1] + 1
                             z[i - 1] = z[i - 1] + 1
@@ -97,12 +104,12 @@ class Oslo:
                                 next_slopes.append(i+1)
                             if z[i-1] == z_th[i-1] + 1:
                                 next_slopes.append(i-1)
-
+                            
                         z_th[i] = random.choice(z_ths)
-
                         if z[i] > z_th[i]:
                             next_slopes.append(i)
                     else:
+                        if crossover == False: cross_over_time += 1
                         pass
 
                 if len(next_slopes) > 0:
@@ -112,19 +119,26 @@ class Oslo:
                 else:
                     slopes_to_relax = []
 
-    #                 print("slopes are zero",s,L)
-
                 # If avalance size is whole length of sites
     #             if s == L:
     # #                 print(s,z)
     #                 steady = True
     #                 N_full_avalanche += 1
 
-                if steady == True:
-                    end_value += 1
-                    z_avg_steady.append(np.cumsum(z[::-1])[::-1][0])
+
                 avalanches.append(s)
-                delta_heights.append(del_h)
+            # out of loop
+            if N_runs != None:
+                end_value +=1
+            elif crossover == True:
+                end_value += 1
+                z_avg_steady.append(np.cumsum(z[::-1])[::-1][0])
+#             else:
+#                 raise ValueError("Not Counting!!")
+
+                
+            self.delta_heights.append(del_h)
+                
             configurations.append(z[:])
 
             # Check
@@ -140,11 +154,34 @@ class Oslo:
 
         if plot == True:
             plot_bar(z)
+        self.z = z
 
-        return final_heights, z, np.mean(z_avg_steady), configurations,delta_heights
+        return final_heights, z, np.mean(z_avg_steady), configurations
+    
+    def get_heights(self,plot = True):
+#         print(len(self.z))
+        heights = np.cumsum(self.delta_heights)
+        time = np.arange(1,len(heights)+1,1)
+        if plot == True:
+            plt.xlabel("Time")
+            plt.ylabel("Height")
+            plt.title("Height of pile against time")
+            plt.plot(time,heights,label = "L = {}".format(self.L))
+        return time, heights
+    
+    def get_cross_over_times(self):
+#         plt.axvline(self.cross_over_time)
+        return self.cross_over_time
 
+import time 
 
-Oslo = Oslo(512)
+start = time.time()
 
-Oslo.run(plot = True,N_recurrents = 10)
-plt.show()
+check = Oslo(256)
+check.run(N_runs = 1000000)
+check.get_heights()
+check.get_cross_over_times()
+
+end = time.time()
+
+print(end-start)
