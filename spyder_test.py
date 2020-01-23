@@ -9,6 +9,7 @@ Created on Tue Jan 14 21:45:26 2020
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def plot_bar(z,title = "Oslo Model"):
     heights = np.cumsum(z[::-1])[::-1] #indexing to reverse list
@@ -44,15 +45,15 @@ class Oslo:
 
         # Variables for testing
         end_value = 0
-        avalanches = []
+        self.avalanches = []
         z_avg_steady = []
         crossover = False  # To
         N_full_avalanche = 0  # Tracks full avalanches
-        configurations = []  # Find number of unique configurations
+        self.configurations = [[0]*self.L]  # Find number of unique STABLE configurations
         self.delta_heights = [0]
         self.cross_over_time = 0
         cross_over_time = 0
-
+        
         if N_runs != None:
             N_count = N_runs
         elif N_recurrents != None:
@@ -65,10 +66,7 @@ class Oslo:
             s = 0
             del_h = 1
             slopes_to_relax = [0]
-            
-            if end_value % 1000 == 0:
-                print(end_value)
-
+            if crossover == False: cross_over_time += 1
             # Relaxation - Checks all slopes z relaxed, before driving again
             while len(slopes_to_relax) != 0:
                 check_slopes = slopes_to_relax
@@ -76,12 +74,12 @@ class Oslo:
                 for i in slopes_to_relax:
                     if z[i] > z_th[i]:
                         s += 1
+                        print(end_value,s,slopes_to_relax,z,z_th)
                         if i == 0:
                             z[i] = z[i] - 2
                             z[i+1] = z[i+1] + 1
                             if z[i+1] == z_th[i+1] + 1:
                                 next_slopes.append(i+1)
-                            if crossover == False: cross_over_time += 1
                             del_h -= 1
 
                         elif i == len(z) - 1:  # index 0,...,L-1 ; len to L
@@ -109,7 +107,6 @@ class Oslo:
                         if z[i] > z_th[i]:
                             next_slopes.append(i)
                     else:
-                        if crossover == False: cross_over_time += 1
                         pass
 
                 if len(next_slopes) > 0:
@@ -118,16 +115,10 @@ class Oslo:
 
                 else:
                     slopes_to_relax = []
-
-                # If avalance size is whole length of sites
-    #             if s == L:
-    # #                 print(s,z)
-    #                 steady = True
-    #                 N_full_avalanche += 1
-
-
-                avalanches.append(s)
-            # out of loop
+                    
+                # out of for loop 
+            self.avalanches.append(s)
+            # out of while loop
             if N_runs != None:
                 end_value +=1
             elif crossover == True:
@@ -139,7 +130,8 @@ class Oslo:
                 
             self.delta_heights.append(del_h)
                 
-            configurations.append(z[:])
+            self.configurations.append(z[:].copy())
+#             print(self.configurations)
 
             # Check
             if check_slopes == True:
@@ -156,11 +148,12 @@ class Oslo:
             plot_bar(z)
         self.z = z
 
-        return final_heights, z, np.mean(z_avg_steady), configurations
+        return final_heights, z, np.mean(z_avg_steady), self.configurations
     
     def get_heights(self,plot = True):
 #         print(len(self.z))
         heights = np.cumsum(self.delta_heights)
+#         print(self.delta_heights)
         time = np.arange(1,len(heights)+1,1)
         if plot == True:
             plt.xlabel("Time")
@@ -168,20 +161,63 @@ class Oslo:
             plt.title("Height of pile against time")
             plt.plot(time,heights,label = "L = {}".format(self.L))
         return time, heights
+
+    def get_heights_attractor(self,plot = False):
+        times, heights = self.get_heights(plot = False)
+#         print(times)
+#         print(self.cross_over_time)
+        times_crossed = times[self.cross_over_time:]
+#         print(times_crossed)
+        # Shift so T starts at zero
+        times_crossed -= self.cross_over_time
+        heights_crossed = heights[self.cross_over_time +1:]
+        
+        avg_height = 1/times_crossed[-1] * sum(heights_crossed)
+        avg_height_sq = 1/times_crossed[-1] * sum(heights_crossed**2)
+        
+        self.std_dev = np.sqrt(avg_height_sq - avg_height **2)
+        
+        if plot == True:
+            plt.plot(times_crossed,heights_crossed)
+            
+        return avg_height
+    
+    def get_std_heights(self):
+        return self.std_dev
     
     def get_cross_over_times(self):
 #         plt.axvline(self.cross_over_time)
         return self.cross_over_time
 
-import time 
+    def get_probability_heights(self):
+        """
+        Creats a dataframe of heights, and their counts from the configurations
+        
+        Returns a list of normalised probabilities form height = 0
+        """
+        
+        sums = [sum(x) for x in self.configurations]
+        df = pd.DataFrame({"Configurations": self.configurations,"Heights":sums})
+        count_heights =pd.DataFrame(df["Heights"].value_counts().sort_index().reset_index())
+        count_heights.columns = ["height","count"]
+        
+        heights = count_heights["height"].to_list()
+        
+        counts = np.array(count_heights["count"].to_list())
+        N_observed = len(df) # Number of all configurations observed
+        probs = counts/N_observed
+#         print(count_heights)
 
-start = time.time()
+        return [heights,probs]
 
-check = Oslo(256)
-check.run(N_runs = 1000000)
-check.get_heights()
-check.get_cross_over_times()
-
-end = time.time()
-
-print(end-start)
+    def get_avalanche(self):
+        return self.avalanches
+    
+check = Oslo(4)
+a,b,c,configs = check.run(N_runs = 1000)
+a,b = check.get_heights()
+check.get_heights_attractor()
+check.get_probability_heights()
+check.get_avalanche()
+# check.get_std_heights()
+# check.get_cross_over_times()
