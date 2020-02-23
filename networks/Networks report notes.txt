@@ -1,0 +1,5 @@
+2) Pure Preferential Attachment
+
+Add exception error to prevent m > m0
+
+Used a preferential list. Makes a list of of the every edge connection to a vertex. Having a larger number of these causes it to have a higher probability across the whole list. 
