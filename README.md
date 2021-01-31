@@ -13,7 +13,7 @@ Additional scaling correction constants were found for avalanche size moments, i
 ### Networks
 The Barabasi-Albert Model was investigated with three attachment models: preferential attachment, random attachment, and random walk with preferential attach- ment. Theoretical derivations with experimental tests were carried out for the degree distribution and largest degree for random and preferential attachment. A two-sample Kolmogorov–Smirnov test was used to test goodness of fits, with log-binning used to remedy fat-tails. 
 
-Additionally, a data collapse of varying N was done for preferential at- tachment. For random walk, different q values were tested to show the progression of the degree distribution from random to preferential attachment. It was found for N = 1000, m = 2 with no repeats, the distribution transitioned to random at q = 0.30 ± 0.02 and transitioned to preferential at q = 0.76 ± 0.02.
+Additionally, a data collapse of varying N was done for preferential attachment. For random walk, different q values were tested to show the progression of the degree distribution from random to preferential attachment. It was found for N = 1000, m = 2 with no repeats, the distribution transitioned to random at q = 0.30 ± 0.02 and transitioned to preferential at q = 0.76 ± 0.02.
 
 
 ## Full Reports
